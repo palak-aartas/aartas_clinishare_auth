@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyB7S22X4E8BeCK6Cb_M4BhiXLdI6diZEIk</string>
+	<key>GCM_SENDER_ID</key>
+	<string>1057701588403</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.example.clinisquareAuth</string>
+	<key>PROJECT_ID</key>
+	<string>aartas-clinisquare</string>
+	<key>STORAGE_BUCKET</key>
+	<string>aartas-clinisquare.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:1057701588403:ios:d2a8c8cc4b4bf3e611afc6</string>
+</dict>
+</plist>

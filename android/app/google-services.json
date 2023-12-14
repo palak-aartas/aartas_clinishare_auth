@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1057701588403",
+    "project_id": "aartas-clinisquare",
+    "storage_bucket": "aartas-clinisquare.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1057701588403:android:fb205d9f1b892a2d11afc6",
+        "android_client_info": {
+          "package_name": "com.aartas.clinisquare"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAu3QT0wfuVgbrw29vGjj-sLZ1T1xDuLbw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1057701588403:android:990c7ddb6db46ea811afc6",
+        "android_client_info": {
+          "package_name": "com.example.clinisquare_auth"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAu3QT0wfuVgbrw29vGjj-sLZ1T1xDuLbw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
