@@ -1,7 +1,5 @@
 import 'dart:async';
 import 'dart:developer';
-
-import 'package:clinisquare_auth/animated_steps.dart';
 import 'package:clinisquare_auth/custom_logo_image.dart';
 import 'package:clinisquare_auth/temp.dart';
 import 'package:connect_design_system/animations/fade_and_scale_transition.dart';
@@ -11,10 +9,11 @@ import 'package:connect_design_system/components/misc/snackbar.dart';
 import 'package:connect_design_system/components/ui/buttons.dart';
 import 'package:connect_design_system/components/ui/text_form_field.dart';
 import 'package:connect_design_system/modules/authentication/providers/registration_provider.dart';
+import 'package:connect_design_system/modules/licence/provider/licence_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:connect_design_system/modules/authentication/providers/authentication_provider.dart';
 
@@ -43,19 +42,19 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
   bool showsetPasscode = false;
   bool showresetPasscode = false;
   bool isLoading = false;
-  FirebaseMessaging messaging = FirebaseMessaging.instance;
+  // FirebaseMessaging messaging = FirebaseMessaging.instance;
   String fcmToken = '';
 
-  getFCM() async {
-    messaging.getToken().then(
-      (token) {
-        fcmToken = token!;
-        log(fcmToken);
-        setState(() {});
-        // print(fcmToken);
-      },
-    );
-  }
+  // getFCM() async {
+  //   messaging.getToken().then(
+  //     (token) {
+  //       fcmToken = token!;
+  //       log(fcmToken);
+  //       setState(() {});
+  //       // print(fcmToken);
+  //     },
+  //   );
+  // }
 
 // Personal Details Page
   final detailsFormkey = GlobalKey<FormState>();
@@ -68,43 +67,59 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
   TextEditingController newEmailController = TextEditingController();
   TextEditingController newPhoneController = TextEditingController();
   final FirebaseAuth auth = FirebaseAuth.instance;
-  final String verificationId = "";
+  String verificationId = "";
 
   checkExistingNumber(String number) {
+    isLoading = true;
+    setState(() {});
     Provider.of<AuthenticationProvider>(context, listen: false)
         .checkUserExist(baseURL, countryCode, "$countryCode$number")
         .then((value) {
+      isLoading = false;
+      setState(() {});
       if (value.code == 400) {
-        showSnackbar(context, value.message!, lightBlueColor);
+        showSnackbar(context, value.message!, null);
       } else {
+        startTimer();
         verifyPhoneNumber(newPhoneController.text);
       }
     });
   }
 
   Future<void> verifyPhoneNumber(String phoneNumber) async {
+    isLoading = true;
+    setState(() {});
+
     verificationCompleted(PhoneAuthCredential phoneAuthCredential) async {
       await auth.signInWithCredential(phoneAuthCredential);
       print("Auto Verification Completed");
+      isLoading = false;
+      setState(() {});
     }
 
     verificationFailed(FirebaseAuthException authException) {
       print('Phone number verification failed. Code: ${authException.code}');
       print('Message: ${authException.message}');
+      isLoading = false;
+      setState(() {});
     }
 
-    codeSent(String verificationId, [int? forceResendingToken]) async {
+    codeSent(String verificationID, [int? forceResendingToken]) async {
       print('Please check your phone for the verification code.');
-      verificationId = verificationId;
+      verificationId = verificationID;
+      isLoading = false;
+      setState(() {});
     }
 
     codeAutoRetrievalTimeout(String verificationId) {
       print("Verification Code Timeout");
+      isLoading = false;
+      setState(() {});
     }
 
     await auth.verifyPhoneNumber(
       phoneNumber: '+91$phoneNumber',
-      timeout: const Duration(seconds: 5),
+      // timeout: const Duration(seconds: 5),
       verificationCompleted: verificationCompleted,
       verificationFailed: verificationFailed,
       codeSent: codeSent,
@@ -144,7 +159,9 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
       );
       await auth.signInWithCredential(credential);
       print("Phone number signed in");
-      Navigator.pop(context);
+      pageController!.nextPage(duration: duration, curve: curve);
+      isLoading = false;
+      setState(() {});
     } catch (e) {
       print('Error signing in with phone number: $e');
     }
@@ -155,7 +172,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
   TextEditingController reEnterPasscodeController = TextEditingController();
 
   register(String name, String email, String password, String phoneNumber) {
-    isLoading = false;
+    isLoading = true;
     setState(() {});
     Provider.of<RegistrationProvider>(context, listen: false)
         .registerUser(baseURL, countryCode, "$countryCode$phoneNumber", email,
@@ -165,11 +182,23 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
         isLoading = false;
         setState(() {});
         if (value.status != null && value.status!) {
-          showSnackbar(context, value.message!, lightBlueColor);
-          login(value.data!.phoneNumber!, password);
+          isLoading = true;
+          setState(() {});
+          Provider.of<LicenceProvider>(context, listen: false)
+              .buyLicence(
+                  baseURL, "Free", "0", "4", "${value.data!.id}", "4", "5", "0")
+              .then((val) {
+            isLoading = false;
+            setState(() {});
+            if (val.status != null && val.status!) {
+              pageController!.jumpToPage(4);
+              // login(value.data!.phoneNumber!, password);
+            }
+            log("${value.message}");
+            showSnackbar(context, value.message!, null);
+          });
         } else {
-          log("${value.message}");
-          showSnackbar(context, value.message!, lightBlueColor);
+          showSnackbar(context, value.message!, null);
         }
       },
     );
@@ -177,10 +206,8 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
 
 // Login Page
   String countryCode = '+91';
-  TextEditingController phoneController =
-      TextEditingController(text: '7506105831');
-  TextEditingController passcodeController =
-      TextEditingController(text: '123456');
+  TextEditingController phoneController = TextEditingController(text: '');
+  TextEditingController passcodeController = TextEditingController(text: '');
   final loginformKey = GlobalKey<FormState>();
 
   login(String phone, String passcode) {
@@ -211,7 +238,6 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
           // log(token);
           // Provider.of<SessionProvider>(context, listen: false)
           //     .updateSessionState(true);
-
           //? Please Change before Production
           // Navigator.pushAndRemoveUntil(
           //   context,
@@ -222,7 +248,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
           // );
         } else {
           log("${value.message}");
-          showSnackbar(context, value.message!, lightBlueColor);
+          showSnackbar(context, value.message!, null);
         }
       },
     );
@@ -233,28 +259,37 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
   TextEditingController reEnterPassController = TextEditingController();
   final resetPassKey = GlobalKey<FormState>();
   String userid = '';
+
   checkuserNumber(String number) {
+    isLoading = true;
+    setState(() {});
     Provider.of<AuthenticationProvider>(context, listen: false)
         .checkUserExist(baseURL, countryCode, "$countryCode$number")
         .then((value) {
+      isLoading = false;
+      setState(() {});
       if (value.code == 400) {
         verifyPhoneNumber(number);
         userid = "${value.data!.id}";
       } else {
-        showSnackbar(context, value.message!, lightBlueColor);
+        showSnackbar(context, value.message!, null);
       }
     });
   }
 
   resetPassword() {
+    isLoading = true;
+    setState(() {});
     Provider.of<AuthenticationProvider>(context, listen: false)
         .resetPassword(
             baseURL, userid, setPassController.text, reEnterPassController.text)
         .then((value) {
+      isLoading = false;
+      setState(() {});
       if (value.status != null && value.status!) {
         pageController!.nextPage(duration: duration, curve: curve);
       } else {
-        showSnackbar(context, '${value.message}', lightBlueColor);
+        showSnackbar(context, '${value.message}', null);
       }
     });
   }
@@ -262,13 +297,14 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
   @override
   void initState() {
     if (widget.isForgetpassword != null && widget.isForgetpassword!) {
-      currentPage = 3;
+      currentPage = 2;
     } else {
       if (widget.initialPage != null) {
         currentPage = widget.initialPage!;
       }
     }
     // getFCM();
+    // currentPage = 4;
     pageController = PageController(initialPage: currentPage);
     getHeight();
     super.initState();
@@ -282,19 +318,22 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
     super.dispose();
   }
 
-  double _height = 0;
+  // double _height = 0;
   GlobalKey logoKey = GlobalKey();
 
   getHeight() {
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      _height = logoKey.currentContext!.size!.height;
-      setState(() {});
-    });
+    // WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+    //   _height = logoKey.currentContext!.size!.height;
+    //   setState(() {});
+    // });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(body: forms(context));
+    return Scaffold(
+      backgroundColor: themeData(context).colorScheme.background,
+      body: forms(context),
+    );
   }
 
   Widget forms(context) {
@@ -304,68 +343,68 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
         Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            currentPage > 1 && currentPage != 5
-                ? Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      0,
-                      _height,
-                      defaultPadding,
-                      0,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        CDSButton(
-                          mainAxisSize: MainAxisSize.min,
-                          leftIcon: CupertinoIcons.arrow_left,
-                          bgColor: themeData(context).colorScheme.background,
-                          textColor: textTheme(context).titleLarge!.color,
-                          onTap: widget.isForgetpassword != null &&
-                                  widget.isForgetpassword!
-                              ? () => Navigator.pop(context)
-                              : () {
-                                  pageController!.previousPage(
-                                    duration: duration,
-                                    curve: curve,
-                                  );
-                                },
-                        ),
-                        Text(
-                          widget.isForgetpassword != null &&
-                                  widget.isForgetpassword!
-                              ? "Forgot Password"
-                              : "Account Set up",
-                          style: textTheme(context).titleMedium!.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                        const Spacer(),
-                        widget.isForgetpassword != null &&
-                                widget.isForgetpassword!
-                            ? const SizedBox()
-                            : Text(
-                                "${currentPage - 1}/4",
-                                style: textTheme(context).titleMedium!.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                textAlign: TextAlign.end,
-                              ),
-                      ],
-                    ),
-                  )
-                : const SizedBox(),
-            currentPage != 1 && currentPage != 5
-                ? widget.isForgetpassword != null && widget.isForgetpassword!
-                    ? const SizedBox()
-                    : Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: defaultPadding),
-                        child: AnimatedSteps(
-                          steps: 4,
-                          current: currentPage.toDouble() - 1,
-                        ),
-                      )
-                : const SizedBox(),
+            // currentPage > 1 && currentPage != 5
+            //     ? Padding(
+            //         padding: EdgeInsets.fromLTRB(
+            //           0,
+            //           _height,
+            //           defaultPadding,
+            //           0,
+            //         ),
+            //         child: Row(
+            //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            //           children: [
+            //             CDSButton(
+            //               mainAxisSize: MainAxisSize.min,
+            //               leftIcon: CupertinoIcons.arrow_left,
+            //               bgColor: themeData(context).colorScheme.background,
+            //               textColor: textTheme(context).titleLarge!.color,
+            //               onTap: widget.isForgetpassword != null &&
+            //                       widget.isForgetpassword!
+            //                   ? () => Navigator.pop(context)
+            //                   : () {
+            //                       pageController!.previousPage(
+            //                         duration: duration,
+            //                         curve: curve,
+            //                       );
+            //                     },
+            //             ),
+            //             Text(
+            //               widget.isForgetpassword != null &&
+            //                       widget.isForgetpassword!
+            //                   ? "Forgot Password"
+            //                   : "Account Set up",
+            //               style: textTheme(context).titleMedium!.copyWith(
+            //                     fontWeight: FontWeight.bold,
+            //                   ),
+            //             ),
+            //             const Spacer(),
+            //             widget.isForgetpassword != null &&
+            //                     widget.isForgetpassword!
+            //                 ? const SizedBox()
+            //                 : Text(
+            //                     "${currentPage - 1}/4",
+            //                     style: textTheme(context).titleMedium!.copyWith(
+            //                           fontWeight: FontWeight.w600,
+            //                         ),
+            //                     textAlign: TextAlign.end,
+            //                   ),
+            //           ],
+            //         ),
+            //       )
+            //     : const SizedBox(),
+            // currentPage != 1 && currentPage != 5
+            //     ? widget.isForgetpassword != null && widget.isForgetpassword!
+            //         ? const SizedBox()
+            //         : Padding(
+            //             padding: const EdgeInsets.symmetric(
+            //                 horizontal: defaultPadding),
+            //             child: AnimatedSteps(
+            //               steps: 4,
+            //               current: currentPage.toDouble() - 1,
+            //             ),
+            //           )
+            //     : const SizedBox(),
             Expanded(
               child: PageView(
                 physics: const NeverScrollableScrollPhysics(),
@@ -387,8 +426,8 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
         ),
         Positioned(
           key: logoKey,
-          left: 0,
-          top: 0,
+          left: 16,
+          top: 16,
           child: Container(
             padding: EdgeInsets.fromLTRB(
               defaultPadding,
@@ -398,8 +437,9 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
             ),
             child: FadeAndScaleTransition(
               child: CustomLogoImage(
-                size: 100,
-                imgUrl: "${appAssets(liveURL)}/AartasLogo.png",
+                size: 60,
+                imgUrl: "$imgUrl/icons/Logo.png",
+                // color: textTheme(context).bodySmall!.color,
               ),
             ),
           ),
@@ -422,30 +462,29 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                FadeAndScaleTransition(
+                const FadeAndScaleTransition(
                   index: 3,
                   child: Icon(
                     CupertinoIcons.check_mark_circled_solid,
-                    size: textTheme(context).displayMedium!.fontSize,
+                    size: 60,
                     color: primaryColor,
                   ),
                 ),
-                const SizedBox(
-                  height: defaultPadding,
-                ),
+                const SizedBox(height: 8),
                 Text(
                   widget.isForgetpassword != null && widget.isForgetpassword!
                       ? "Password Reset Successfully"
-                      : "Account Setup Completed",
+                      : "Account Setup Successfully",
                   style: textTheme(context).headlineSmall!.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                   // textAlign: TextAlign.center,
                 ),
+                const SizedBox(height: 2),
                 Text(
-                  "Your account is successfully created. Please Login",
+                  "Your account has been successfully created. Please Login with the credentials in CliniSquare Desktop App.",
                   style: textTheme(context).bodySmall!.copyWith(
                         fontWeight: FontWeight.w500,
                       ),
@@ -455,28 +494,26 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
             ),
           ),
         ),
-        FadeAndScaleTransition(
-          index: 3,
-          child: Container(
-            width: defaultWidth,
-            padding: const EdgeInsets.symmetric(
-              horizontal: defaultPadding * 1.5,
-            ),
-            child: CDSButton(
-              padding: const EdgeInsets.all(12),
-              // isLoading: true,
-              // mainAxisSize: MainAxisSize.min,
-              label: "Login",
-              onTap: () {
-                isLoading = false;
-                pageController!.jumpToPage(0);
-              },
-            ),
-          ),
-        ),
-        SizedBox(
-          height: mediaQuery(context).padding.bottom + (defaultPadding * 2),
-        ),
+        // FadeAndScaleTransition(
+        //   index: 3,
+        //   child: Container(
+        //     width: defaultWidth,
+        //     padding: const EdgeInsets.symmetric(
+        //       horizontal: defaultPadding * 1.5,
+        //     ),
+        //     child: CDSButton(
+        //       padding: const EdgeInsets.all(12),
+        //       label: "Login",
+        //       onTap: () {
+        //         isLoading = false;
+        //         pageController!.jumpToPage(0);
+        //       },
+        //     ),
+        //   ),
+        // ),
+        // SizedBox(
+        //   height: mediaQuery(context).padding.bottom + (defaultPadding * 2),
+        // ),
       ],
     );
   }
@@ -486,8 +523,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
       key: resetPassKey,
       child: SingleChildScrollView(
         child: SizedBox(
-          height: mediaQuery(context).size.height -
-              (AppBar().preferredSize.height * 3),
+          height: mediaQuery(context).size.height,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -529,6 +565,10 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                       maxLines: 1,
                       hintText: "Ex. 123456",
                       keyboardType: TextInputType.visiblePassword,
+                      maxLength: 6,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
                       validator: (p0) {
                         if (p0 != reEnterPassController.text) {
                           return 'Password Does not match';
@@ -572,6 +612,10 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                       maxLines: 1,
                       hintText: "Re-enter Passcode",
                       keyboardType: TextInputType.visiblePassword,
+                      maxLength: 6,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
                       validator: (p0) {
                         if (p0 != setPassController.text) {
                           return 'Password Does not match';
@@ -609,9 +653,9 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
               CDSButton(
                 width: defaultWidth,
                 padding: const EdgeInsets.all(12),
-                // isLoading: true,
+                isLoading: isLoading,
                 // mainAxisSize: MainAxisSize.min,
-
+                bgColor: textTheme(context).titleLarge!.color,
                 label: "Next",
                 onTap: () {
                   if (resetPassKey.currentState!.validate()) {
@@ -630,8 +674,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
     return SingleChildScrollView(
       child: SizedBox(
         width: defaultWidth,
-        height: mediaQuery(context).size.height -
-            (AppBar().preferredSize.height * 3),
+        height: mediaQuery(context).size.height,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -661,105 +704,133 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                 ],
               ),
             ),
-            SizedBox(
+            ConnectTextFormField(
+              controller: phoneController,
+              // title: "Phone Number",
+              enabled: verificationId == "",
               width: defaultWidth,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ConnectTextFormField(
-                      controller: phoneController,
-                      // title: "Phone Number",
-                      keyboardType: TextInputType.number,
-                      contentPadding: const EdgeInsets.all(16),
-                      hintText: "Enter phone number here",
-                      maxLength: 10,
+              validator: (value) {
+                if (value!.isEmpty && value.length != 10) {
+                  return "Enter Correct Phone Number";
+                } else {
+                  return null;
+                }
+              },
+              onChanged: (p0) {
+                setState(() {});
+              },
+              contentPadding: const EdgeInsets.all(16),
+              hintText: "Enter phone number here",
+              maxLength: 10,
+              keyboardType: TextInputType.number,
 
-                      // prefixWidget: Container(
-                      //   decoration: const BoxDecoration(
-                      //     border: Border(
-                      //       right: BorderSide(
-                      //         width: 2,
-                      //       ),
-                      //     ),
-                      //   ),
-                      //   margin: const EdgeInsets.only(
-                      //     right: defaultPadding,
-                      //     top: defaultPadding,
-                      //     bottom: defaultPadding,
-                      //   ),
-                      //   padding: const EdgeInsets.symmetric(
-                      //     horizontal: defaultPadding,
-                      //     // vertical: defaultPadding / 2,
-                      //   ),
-                      //   child: Text(
-                      //     "+91",
-                      //     style: textTheme(context).titleMedium!.copyWith(
-                      //           fontWeight: FontWeight.w600,
-                      //         ),
-                      //   ),
-                      // ),
-                      // enabled: false,
+              //   decoration: const BoxDecoration(
+              //     border: Border(
+              //       right: BorderSide(
+              //         width: 2,
+              //       ),
+              //     ),
+              //   ),
+              //   margin: const EdgeInsets.only(
+              //     right: defaultPadding,
+              //     top: defaultPadding,
+              //     bottom: defaultPadding,
+              //   ),
+              //   padding: const EdgeInsets.symmetric(
+              //     horizontal: defaultPadding,
+              //     // vertical: defaultPadding / 2,
+              //   ),
+              //   child: Text(
+              //     "+91",
+              //     style: textTheme(context).titleMedium!.copyWith(
+              //           fontWeight: FontWeight.w600,
+              //         ),
+              //   ),
+              // ),
+              // enabled: false,
+            ),
+
+            verificationId == ""
+                ? Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: CDSButton(
+                      bgColor: textTheme(context).titleSmall!.color,
+                      width: defaultWidth,
+                      padding: const EdgeInsets.all(12),
+                      label: "Send OTP",
+                      isLoading: isLoading,
+                      onTap: phoneController.text.length == 10
+                          ? () {
+                              checkuserNumber(phoneController.text);
+                            }
+                          : null,
                     ),
-                  ),
-                  const SizedBox(
-                    width: defaultPadding,
-                  ),
-                  CDSButton(
-                    label: "Send OTP",
-                    padding: const EdgeInsets.all(11),
-                    isLoading: isLoading,
-                    onTap: time == 59
-                        ? () {
-                            startTimer();
-                            checkuserNumber(phoneController.text);
-                          }
-                        : null,
-                  ),
-                ],
-              ),
-            ),
+                  )
+                : const SizedBox(),
             const SizedBox(
-              height: 16,
+              height: defaultPadding,
             ),
-            SizedBox(
-              width: defaultWidth,
-              child: Stack(
-                children: [
-                  ConnectTextFormField(
+            verificationId == ""
+                ? const SizedBox()
+                : ConnectTextFormField(
                     width: defaultWidth,
                     controller: otpController,
-                    contentPadding: const EdgeInsets.all(16),
                     // title: "OTP",
+                    contentPadding: const EdgeInsets.all(16),
                     hintText: "Your 6 Digit OTP",
+                    autoFocus: true,
+                    maxLength: 6,
                     keyboardType: TextInputType.number,
                   ),
-                  time != 59
-                      ? const SizedBox()
-                      : Positioned(
-                          right: 8,
-                          bottom: 12,
-                          child: Text(
-                            "${time}s",
-                            style: textTheme(context).bodySmall!.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: primaryColor,
-                                ),
-                          ),
-                        ),
-                ],
-              ),
+            // Container(
+            //   padding: const EdgeInsets.fromLTRB(
+            //     0,
+            //     0,
+            //     0,
+            //     defaultPadding / 2,
+            //   ),
+            //   alignment: Alignment.centerRight,
+            //   child: FittedBox(
+            //     child: CDSButton(
+            //       borderRadius: BorderRadius.zero,
+            //       mainAxisSize: MainAxisSize.min,
+            //       label: "Resend OTP?",
+            //       textColor: blueColor,
+            //       padding: const EdgeInsets.fromLTRB(
+            //         0,
+            //         0,
+            //         defaultPadding * 2,
+            //         defaultPadding / 2,
+            //       ),
+            //       bgColor: themeData(context).colorScheme.background,
+            //       decoration: TextDecoration.underline,
+            //       onTap: () {},
+            //     ),
+            //   ),
+            // ),
+            const SizedBox(
+              height: 24,
             ),
-            const SizedBox(height: 16),
-            CDSButton(
-              width: defaultWidth,
-              // isLoading: true,
-              // mainAxisSize: MainAxisSize.min,
-              padding: const EdgeInsets.all(12),
-              label: "Next",
-              onTap: () {
-                _signInWithPhoneNumber();
-              },
-            ),
+            verificationId == ""
+                ? const SizedBox()
+                : CDSButton(
+                    width: defaultWidth,
+                    padding: const EdgeInsets.all(12),
+                    isLoading: isLoading,
+                    bgColor: textTheme(context).titleLarge!.color,
+                    // mainAxisSize: MainAxisSize.min,
+                    label: "Next",
+                    onTap: () {
+                      isLoading = true;
+                      setState(() {});
+                      PhoneAuthCredential phoneAuthCreds =
+                          PhoneAuthProvider.credential(
+                        verificationId: verificationId,
+                        smsCode: otpController.text,
+                      );
+                      _signInWithPhoneNumber();
+                    },
+                  ),
           ],
         ),
       ),
@@ -788,13 +859,13 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Welcome to Connect 2.0",
+                      "Welcome to CliniSquare",
                       style: textTheme(context).headlineSmall!.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
                     ),
                     Text(
-                      "lorem ipsum have sent verification code on the registered contact no.",
+                      "Register yourself",
                       style: textTheme(context).bodySmall!.copyWith(
                             fontWeight: FontWeight.w500,
                           ),
@@ -802,93 +873,89 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                   ],
                 ),
               ),
-              SizedBox(
+              ConnectTextFormField(
+                controller: newPhoneController,
+                // title: "Phone Number",
+                enabled: verificationId == "",
                 width: defaultWidth,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: ConnectTextFormField(
-                        controller: newPhoneController,
-                        // title: "Phone Number",
-                        validator: (value) {
-                          if (value!.isEmpty && value.length != 10) {
-                            return "Enter Correct Phone Number";
-                          } else {
-                            return null;
-                          }
-                        },
-                        contentPadding: const EdgeInsets.all(16),
-                        hintText: "Enter phone number here",
-                        maxLength: 10,
-                        keyboardType: TextInputType.number,
-                        // prefixWidget: Container(
-                        //   decoration: const BoxDecoration(
-                        //     border: Border(
-                        //       right: BorderSide(
-                        //         width: 2,
-                        //       ),
-                        //     ),
-                        //   ),
-                        //   margin: const EdgeInsets.only(
-                        //     right: defaultPadding,
-                        //     top: defaultPadding,
-                        //     bottom: defaultPadding,
-                        //   ),
-                        //   padding: const EdgeInsets.symmetric(
-                        //     horizontal: defaultPadding,
-                        //     // vertical: defaultPadding / 2,
-                        //   ),
-                        //   child: Text(
-                        //     "+91",
-                        //     style: textTheme(context).titleMedium!.copyWith(
-                        //           fontWeight: FontWeight.w600,
-                        //         ),
-                        //   ),
-                        // ),
-                        // enabled: false,
-                      ),
-                    ),
-                    const SizedBox(
-                      width: defaultPadding,
-                    ),
-                    CDSButton(
-                      padding: const EdgeInsets.all(11),
-                      label: "Send OTP",
-                      onTap: () {
-                        if (registerformKey.currentState!.validate()) {
-                          startTimer();
-                          checkExistingNumber(newPhoneController.text);
-                        }
-                      },
-                    ),
-                  ],
-                ),
+                validator: (value) {
+                  if (value!.isEmpty && value.length != 10) {
+                    return "Enter Correct Phone Number";
+                  } else {
+                    return null;
+                  }
+                },
+                onChanged: (p0) {
+                  setState(() {});
+                },
+                contentPadding: const EdgeInsets.all(16),
+                hintText: "Enter phone number here",
+                maxLength: 10,
+                keyboardType: TextInputType.number,
+
+                //   decoration: const BoxDecoration(
+                //     border: Border(
+                //       right: BorderSide(
+                //         width: 2,
+                //       ),
+                //     ),
+                //   ),
+                //   margin: const EdgeInsets.only(
+                //     right: defaultPadding,
+                //     top: defaultPadding,
+                //     bottom: defaultPadding,
+                //   ),
+                //   padding: const EdgeInsets.symmetric(
+                //     horizontal: defaultPadding,
+                //     // vertical: defaultPadding / 2,
+                //   ),
+                //   child: Text(
+                //     "+91",
+                //     style: textTheme(context).titleMedium!.copyWith(
+                //           fontWeight: FontWeight.w600,
+                //         ),
+                //   ),
+                // ),
+                // enabled: false,
               ),
+
+              verificationId == ""
+                  ? Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: CDSButton(
+                        bgColor: textTheme(context).titleSmall!.color,
+                        width: defaultWidth,
+                        padding: const EdgeInsets.all(12),
+                        label: "Send OTP",
+                        isLoading: isLoading,
+                        onTap: newPhoneController.text.length == 10
+                            ? () {
+                                if (registerformKey.currentState!.validate()) {
+                                  checkExistingNumber(newPhoneController.text);
+                                }
+                              }
+                            : null,
+                      ),
+                    )
+                  : const SizedBox(),
               const SizedBox(
                 height: defaultPadding,
               ),
-              ConnectTextFormField(
-                width: defaultWidth,
-                controller: otpController,
-                // title: "OTP",
-                contentPadding: const EdgeInsets.all(16),
-                hintText: "Your 6 Digit OTP",
-                keyboardType: TextInputType.number,
-                // suffixWidget: time == 59
-                //     ? const SizedBox()
-                //     : Padding(
-                //         padding: const EdgeInsets.all(defaultPadding),
-                //         child: Text(
-                //           "${time}s",
-                //           style: textTheme(context).titleMedium!.copyWith(
-                //                 fontWeight: FontWeight.w600,
-                //                 color: primaryColor,
-                //               ),
-                //         ),
-                //       ),
-              ),
-
+              verificationId == ""
+                  ? const SizedBox()
+                  : ConnectTextFormField(
+                      maxLength: 6,
+                      // title: "OTP",
+                      width: defaultWidth,
+                      controller: otpController,
+                      contentPadding: const EdgeInsets.all(16),
+                      hintText: "Your 6 Digit OTP",
+                      autoFocus: true,
+                      keyboardType: TextInputType.number,
+                      onChanged: (p0) {
+                        setState(() {});
+                      },
+                    ),
               // Container(
               //   padding: const EdgeInsets.fromLTRB(
               //     0,
@@ -916,56 +983,69 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
               //   ),
               // ),
               const SizedBox(
-                height: defaultPadding,
+                height: 24,
               ),
-              CDSButton(
-                width: defaultWidth,
-                padding: const EdgeInsets.all(12),
-                isLoading: isLoading,
-                // mainAxisSize: MainAxisSize.min,
-                label: "Next",
-                onTap: () {
-                  _signInWithPhoneNumber();
-                },
-              ),
-              FadeAndScaleTransition(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: defaultPadding * 1.5,
-                    // vertical: defaultPadding,
-                  ),
-                  child: Wrap(
-                    alignment: WrapAlignment.center,
-                    runAlignment: WrapAlignment.center,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      Text(
-                        "Already have an account?  ",
-                        style: textTheme(context).titleSmall!.copyWith(
-                              fontWeight: FontWeight.w500,
-                            ),
-                      ),
-                      CDSButton(
-                        label: "Sign In",
-                        mainAxisSize: MainAxisSize.min,
-                        textColor: primaryColor,
-                        textStyle: textTheme(context).titleSmall!.copyWith(
-                              fontWeight: FontWeight.w500,
-                            ),
-                        borderRadius: BorderRadius.zero,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: defaultPadding / 2,
-                        ),
-                        bgColor: themeData(context).colorScheme.background,
-                        decoration: TextDecoration.underline,
-                        onTap: () {
-                          pageController!.jumpToPage(0);
-                        },
-                      )
-                    ],
-                  ),
-                ),
-              ),
+              verificationId == ""
+                  ? const SizedBox()
+                  : CDSButton(
+                      width: defaultWidth,
+                      padding: const EdgeInsets.all(12),
+                      isLoading: isLoading,
+                      bgColor: textTheme(context).titleLarge!.color,
+                      // mainAxisSize: MainAxisSize.min,
+                      label: "Next",
+                      onTap: newPhoneController.text.length == 10 &&
+                              otpController.text.length == 6
+                          ? () {
+                              isLoading = true;
+                              setState(() {});
+                              PhoneAuthCredential phoneAuthCreds =
+                                  PhoneAuthProvider.credential(
+                                verificationId: verificationId,
+                                smsCode: otpController.text,
+                              );
+                              _signInWithPhoneNumber();
+                            }
+                          : null,
+                    ),
+              // FadeAndScaleTransition(
+              //   child: Padding(
+              //     padding: const EdgeInsets.symmetric(
+              //       horizontal: defaultPadding * 1.5,
+              //       // vertical: defaultPadding,
+              //     ),
+              //     child: Wrap(
+              //       alignment: WrapAlignment.center,
+              //       runAlignment: WrapAlignment.center,
+              //       crossAxisAlignment: WrapCrossAlignment.center,
+              //       children: [
+              //         Text(
+              //           "Already have an account?  ",
+              //           style: textTheme(context).titleSmall!.copyWith(
+              //                 fontWeight: FontWeight.w500,
+              //               ),
+              //         ),
+              //         CDSButton(
+              //           label: "Sign In",
+              //           mainAxisSize: MainAxisSize.min,
+              //           textColor: primaryColor,
+              //           textStyle: textTheme(context).titleSmall!.copyWith(
+              //                 fontWeight: FontWeight.w500,
+              //               ),
+              //           borderRadius: BorderRadius.zero,
+              //           padding: const EdgeInsets.symmetric(
+              //             vertical: defaultPadding / 2,
+              //           ),
+              //           bgColor: themeData(context).colorScheme.background,
+              //           decoration: TextDecoration.underline,
+              //           onTap: () {
+              //             pageController!.jumpToPage(0);
+              //           },
+              //         )
+              //       ],
+              //     ),
+              //   ),
+              // ),
             ],
           ),
         ),
@@ -978,7 +1058,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
       key: detailsFormkey,
       child: SingleChildScrollView(
         child: SizedBox(
-          height: mediaQuery(context).size.height - (_height * 2),
+          height: mediaQuery(context).size.height,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -1021,6 +1101,9 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                     return null;
                   }
                 },
+                onChanged: (val) {
+                  setState(() {});
+                },
               ),
               const SizedBox(
                 height: defaultPadding,
@@ -1037,6 +1120,9 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                     return null;
                   }
                 },
+                onChanged: (val) {
+                  setState(() {});
+                },
               ),
               const SizedBox(
                 height: defaultPadding,
@@ -1050,10 +1136,17 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                       width: defaultWidth,
                       controller: newPasscodeController,
                       // title: "Passcode*",
+                      onChanged: (val) {
+                        setState(() {});
+                      },
                       obscureText: !showPasscode,
                       maxLines: 1,
-                      hintText: "Enter Passcode here",
+                      hintText: "Enter 6-Digit Number",
                       keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
+                      maxLength: 6,
                       // enabled: false,
                       validator: (value) {
                         if (value!.isEmpty) {
@@ -1137,17 +1230,25 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
               CDSButton(
                 width: defaultWidth,
                 padding: const EdgeInsets.all(12),
-                // isLoading: isLoading,
+                isLoading: isLoading,
+                bgColor: textTheme(context).titleSmall!.color,
                 // mainAxisSize: MainAxisSize.min,
                 label: "Register",
-                onTap: () {
-                  if (detailsFormkey.currentState!.validate()) {
-                    register(nameController.text, newEmailController.text,
-                        newPasscodeController.text, newPhoneController.text);
+                onTap: nameController.text.isNotEmpty &&
+                        newEmailController.text.isNotEmpty &&
+                        newPasscodeController.text.length == 6
+                    ? () {
+                        if (detailsFormkey.currentState!.validate()) {
+                          register(
+                              nameController.text,
+                              newEmailController.text,
+                              newPasscodeController.text,
+                              newPhoneController.text);
 
-                    // pageController!.jumpToPage(5);
-                  }
-                },
+                          // pageController!.jumpToPage(5);
+                        }
+                      }
+                    : null,
               ),
               // Padding(
               //   padding: const EdgeInsets.symmetric(
@@ -1189,219 +1290,222 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
     );
   }
 
-  Widget loginForm(context) {
-    return Form(
-      key: loginformKey,
-      child: Container(
-        margin: const EdgeInsets.all(16),
-        height: mediaQuery(context).size.height,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            FadeAndScaleTransition(
-              index: 2,
-              child: SizedBox(
-                width: defaultWidth,
-                // padding: const EdgeInsets.symmetric(
-                //   horizontal: defaultPadding * 2,
-                // ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Welcome Back!",
-                      style: textTheme(context).headlineSmall!.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                    Text(
-                      "Please enter your credentials.",
-                      style: textTheme(context).bodySmall!.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(
-              height: defaultPadding * 2,
-            ),
-            FadeAndScaleTransition(
-              child: ConnectTextFormField(
-                width: defaultWidth,
-                controller: phoneController,
-                keyboardType: TextInputType.number,
-                contentPadding: const EdgeInsets.all(16),
-                hintText: "Enter phone number here",
-                maxLength: 10,
-                validator: (value) {
-                  if (value!.isEmpty && value.length != 10) {
-                    return "Enter Correct Phone Number";
-                  } else {
-                    return null;
-                  }
-                },
-                fillColor: themeData(context).scaffoldBackgroundColor,
-                // prefixWidget: Container(
-                //   decoration: const BoxDecoration(
-                //     border: Border(
-                //       right: BorderSide(
-                //         width: 2,
-                //       ),
-                //     ),
-                //   ),
-                //   // margin: const EdgeInsets.only(
-                //   //   right: defaultPadding,
-                //   //   top: defaultPadding,
-                //   //   bottom: defaultPadding,
-                //   // ),
-                //   // padding: const EdgeInsets.symmetric(
-                //   //   horizontal: defaultPadding / 2,
-                //   //   // vertical: defaultPadding / 2,
-                //   // ),
-                //   child: Text(
-                //     "+91",
-                //     style: textTheme(context).titleMedium!.copyWith(
-                //           fontWeight: FontWeight.w600,
-                //         ),
-                //   ),
-                // ),
-                // enabled: false,
-              ),
-            ),
-            const SizedBox(
-              height: defaultPadding,
-            ),
-            FadeAndScaleTransition(
-              child: SizedBox(
-                width: defaultWidth,
-                child: Stack(
-                  children: [
-                    ConnectTextFormField(
-                      width: defaultWidth,
-                      controller: passcodeController,
-                      // title: "Passcode*",
-                      obscureText: !showPasscode,
-                      contentPadding: const EdgeInsets.all(16),
-                      maxLines: 1,
-                      hintText: "Enter Passcode here",
-                      // enabled: false,
-                      validator: (value) {
-                        if (value!.isEmpty) {
-                          return "Enter Passcode";
-                        } else {
-                          return null;
-                        }
-                      },
-                      fillColor: themeData(context).scaffoldBackgroundColor,
-                    ),
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: CDSButton(
-                        padding: const EdgeInsets.all(12),
-                        mainAxisSize: MainAxisSize.min,
-                        iconSize: 16,
-                        leftIcon: showPasscode
-                            ? CupertinoIcons.eye_fill
-                            : CupertinoIcons.eye_slash,
-                        bgColor: Colors.transparent,
-                        textColor: blueColor,
-                        onTap: () {
-                          showPasscode = !showPasscode;
-                          setState(() {});
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            FadeAndScaleTransition(
-              child: Container(
-                width: defaultWidth,
-                alignment: Alignment.centerRight,
-                child: FittedBox(
-                  child: CDSButton(
-                    // width: defaultWidth,
-                    alignment: Alignment.centerRight,
-                    borderRadius: BorderRadius.zero,
-                    mainAxisSize: MainAxisSize.min,
-                    label: "Forgot Password?",
-                    padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
-                    textColor: primaryColor,
-                    bgColor: themeData(context).colorScheme.background,
-                    decoration: TextDecoration.underline,
-                    onTap: () {
-                      // Navigator.push(
-                      //   context,
-                      //   MaterialPageRoute(
-                      //     builder: (_) => const OnboardingScreen(
-                      //       // initialPage: 3,
-                      //       isForgetPassword: true,
-                      //     ),
-                      //   ),
-                      // );
-                    },
-                  ),
-                ),
-              ),
-            ),
-            FadeAndScaleTransition(
-              child: CDSButton(
-                width: defaultWidth,
-                padding: const EdgeInsets.all(12),
-                bgColor: textTheme(context).titleSmall!.color,
-                isLoading: isLoading,
-                label: "Login",
-                onTap: () {
-                  if (loginformKey.currentState!.validate()) {
-                    login("$countryCode${phoneController.text}",
-                        passcodeController.text);
-                  }
-                },
-              ),
-            ),
-            FadeAndScaleTransition(
-              child: Wrap(
-                alignment: WrapAlignment.center,
-                runAlignment: WrapAlignment.center,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  Text(
-                    "Don't have an account?  ",
-                    style: textTheme(context).bodySmall!.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
-                  ),
-                  CDSButton(
-                    label: "Sign Up",
-                    // width: 60,
-                    mainAxisSize: MainAxisSize.min,
-                    textColor: primaryColor,
-                    // textStyle: textTheme(context).titleSmall!.copyWith(
-                    //       fontWeight: FontWeight.w500,
-                    //       decoration: TextDecoration.underline,
-                    //     ),
-                    decoration: TextDecoration.underline,
-                    borderRadius: BorderRadius.zero,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: defaultPadding / 2,
-                    ),
-                    bgColor: themeData(context).colorScheme.background,
-                    onTap: () {
-                      pageController!.jumpToPage(1);
-                    },
-                  )
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  // Widget loginForm(context) {
+  //   return Form(
+  //     key: loginformKey,
+  //     child: Container(
+  //       margin: const EdgeInsets.all(16),
+  //       height: mediaQuery(context).size.height,
+  //       child: Column(
+  //         mainAxisAlignment: MainAxisAlignment.center,
+  //         crossAxisAlignment: CrossAxisAlignment.center,
+  //         children: [
+  //           FadeAndScaleTransition(
+  //             index: 2,
+  //             child: SizedBox(
+  //               width: defaultWidth,
+  //               // padding: const EdgeInsets.symmetric(
+  //               //   horizontal: defaultPadding * 2,
+  //               // ),
+  //               child: Column(
+  //                 mainAxisAlignment: MainAxisAlignment.center,
+  //                 crossAxisAlignment: CrossAxisAlignment.start,
+  //                 children: [
+  //                   Text(
+  //                     "Welcome Back!",
+  //                     style: textTheme(context).headlineSmall!.copyWith(
+  //                           fontWeight: FontWeight.w700,
+  //                         ),
+  //                   ),
+  //                   Text(
+  //                     "Please enter your credentials.",
+  //                     style: textTheme(context).bodySmall!.copyWith(
+  //                           fontWeight: FontWeight.w500,
+  //                         ),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //           ),
+  //           const SizedBox(
+  //             height: defaultPadding * 2,
+  //           ),
+  //           FadeAndScaleTransition(
+  //             child: ConnectTextFormField(
+  //               width: defaultWidth,
+  //               controller: phoneController,
+  //               keyboardType: TextInputType.number,
+  //               contentPadding: const EdgeInsets.all(16),
+  //               hintText: "Enter phone number here",
+  //               maxLength: 10,
+  //               validator: (value) {
+  //                 if (value!.isEmpty && value.length != 10) {
+  //                   return "Enter Correct Phone Number";
+  //                 } else {
+  //                   return null;
+  //                 }
+  //               },
+  //               fillColor: themeData(context).scaffoldBackgroundColor,
+  //               // prefixWidget: Container(
+  //               //   decoration: const BoxDecoration(
+  //               //     border: Border(
+  //               //       right: BorderSide(
+  //               //         width: 2,
+  //               //       ),
+  //               //     ),
+  //               //   ),
+  //               //   // margin: const EdgeInsets.only(
+  //               //   //   right: defaultPadding,
+  //               //   //   top: defaultPadding,
+  //               //   //   bottom: defaultPadding,
+  //               //   // ),
+  //               //   // padding: const EdgeInsets.symmetric(
+  //               //   //   horizontal: defaultPadding / 2,
+  //               //   //   // vertical: defaultPadding / 2,
+  //               //   // ),
+  //               //   child: Text(
+  //               //     "+91",
+  //               //     style: textTheme(context).titleMedium!.copyWith(
+  //               //           fontWeight: FontWeight.w600,
+  //               //         ),
+  //               //   ),
+  //               // ),
+  //               // enabled: false,
+  //             ),
+  //           ),
+  //           const SizedBox(
+  //             height: defaultPadding,
+  //           ),
+  //           FadeAndScaleTransition(
+  //             child: SizedBox(
+  //               width: defaultWidth,
+  //               child: Stack(
+  //                 children: [
+  //                   ConnectTextFormField(
+  //                     width: defaultWidth,
+  //                     controller: passcodeController,
+  //                     // title: "Passcode*",
+  //                     obscureText: !showPasscode,
+  //                     contentPadding: const EdgeInsets.all(16),
+  //                     maxLines: 1,
+  //                     hintText: "Enter Passcode here",
+  //                     // enabled: false,
+  //                     validator: (value) {
+  //                       if (value!.isEmpty) {
+  //                         return "Enter Passcode";
+  //                       } else {
+  //                         return null;
+  //                       }
+  //                     },
+  //                     fillColor: themeData(context).scaffoldBackgroundColor,
+  //                   ),
+  //                   Positioned(
+  //                     right: 0,
+  //                     bottom: 0,
+  //                     child: CDSButton(
+  //                       padding: const EdgeInsets.all(12),
+  //                       mainAxisSize: MainAxisSize.min,
+  //                       iconSize: 16,
+  //                       leftIcon: showPasscode
+  //                           ? CupertinoIcons.eye_fill
+  //                           : CupertinoIcons.eye_slash,
+  //                       bgColor: Colors.transparent,
+  //                       textColor: blueColor,
+  //                       onTap: () {
+  //                         showPasscode = !showPasscode;
+  //                         setState(() {});
+  //                       },
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //           ),
+  //           // FadeAndScaleTransition(
+  //           //   child: Container(
+  //           //     width: defaultWidth,
+  //           //     alignment: Alignment.centerRight,
+  //           //     child: FittedBox(
+  //           //       child: CDSButton(
+  //           //         // width: defaultWidth,
+  //           //         alignment: Alignment.centerRight,
+  //           //         borderRadius: BorderRadius.zero,
+  //           //         mainAxisSize: MainAxisSize.min,
+  //           //         label: "Forgot Password?",
+  //           //         padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
+  //           //         textColor: primaryColor,
+  //           //         bgColor: themeData(context).colorScheme.background,
+  //           //         decoration: TextDecoration.underline,
+  //           //         onTap: () {
+  //           //           Navigator.push(
+  //           //             context,
+  //           //             MaterialPageRoute(
+  //           //               builder: (_) => const OnboardingScreen(
+  //           //                 // initialPage: 3,
+  //           //                 isForgetPassword: true,
+  //           //               ),
+  //           //             ),
+  //           //           );
+  //           //         },
+  //           //       ),
+  //           //     ),
+  //           //   ),
+  //           // ),
+  //           const SizedBox(
+  //             height: 16,
+  //           ),
+  //           FadeAndScaleTransition(
+  //             child: CDSButton(
+  //               width: defaultWidth,
+  //               padding: const EdgeInsets.all(12),
+  //               bgColor: textTheme(context).titleSmall!.color,
+  //               isLoading: isLoading,
+  //               label: "Login",
+  //               onTap: () {
+  //                 if (loginformKey.currentState!.validate()) {
+  //                   login("$countryCode${phoneController.text}",
+  //                       passcodeController.text);
+  //                 }
+  //               },
+  //             ),
+  //           ),
+  //           FadeAndScaleTransition(
+  //             child: Wrap(
+  //               alignment: WrapAlignment.center,
+  //               runAlignment: WrapAlignment.center,
+  //               crossAxisAlignment: WrapCrossAlignment.center,
+  //               children: [
+  //                 Text(
+  //                   "Don't have an account?  ",
+  //                   style: textTheme(context).bodySmall!.copyWith(
+  //                         fontWeight: FontWeight.w500,
+  //                       ),
+  //                 ),
+  //                 CDSButton(
+  //                   label: "Sign Up",
+  //                   // width: 60,
+  //                   mainAxisSize: MainAxisSize.min,
+  //                   textColor: primaryColor,
+  //                   // textStyle: textTheme(context).titleSmall!.copyWith(
+  //                   //       fontWeight: FontWeight.w500,
+  //                   //       decoration: TextDecoration.underline,
+  //                   //     ),
+  //                   decoration: TextDecoration.underline,
+  //                   borderRadius: BorderRadius.zero,
+  //                   padding: const EdgeInsets.symmetric(
+  //                     vertical: defaultPadding / 2,
+  //                   ),
+  //                   bgColor: themeData(context).colorScheme.background,
+  //                   onTap: () {
+  //                     pageController!.jumpToPage(1);
+  //                   },
+  //                 )
+  //               ],
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 }

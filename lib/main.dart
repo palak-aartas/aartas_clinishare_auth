@@ -69,11 +69,10 @@ class MyHomePage extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(
+              const Expanded(
                 child: AuthenticationScreen(
-                  initialPage: initialPage != null ? initialPage! : 0,
-                  isForgetpassword:
-                      isForgetPassword != null ? isForgetPassword! : null,
+                  // initialPage: initialPage != null ? initialPage! : 0,
+                  isForgetpassword: false,
                 ),
               ),
               AnimatedContainer(
@@ -113,11 +112,12 @@ class OnboardingCarouselSlider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: seaShellColor,
+      color: f7Color,
+      padding: const EdgeInsets.symmetric(vertical: 100),
       child: CustomLogoImage(
         imgUrl: "$imgUrl/LoginImage.png",
         size: mediaQuery(context).size.width / 2,
-        fit: BoxFit.cover,
+        fit: BoxFit.contain,
       ),
     );
   }

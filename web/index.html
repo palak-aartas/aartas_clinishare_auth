@@ -51,7 +51,7 @@
           let config = {
           renderer: "html",
         };
-          engineInitializer.initializeEngine().then(function(appRunner) {
+          engineInitializer.initializeEngine(config).then(function(appRunner) {
             appRunner.runApp();
           });
         }
