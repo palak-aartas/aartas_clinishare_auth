@@ -696,7 +696,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                         ),
                   ),
                   Text(
-                    "lorem ipsum have sent verification code on the registered contact no.",
+                    "Please enter your registered phone number to get a verification code",
                     style: textTheme(context).bodySmall!.copyWith(
                           fontWeight: FontWeight.w500,
                         ),
@@ -749,7 +749,27 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
               // ),
               // enabled: false,
             ),
-
+            verificationId == ""
+                ? const SizedBox()
+                : SizedBox(
+                    width: defaultWidth,
+                    child: CDSButton(
+                      alignment: Alignment.centerRight,
+                      bgColor: themeData(context).colorScheme.background,
+                      leftIcon: Icons.mode_edit_outline_outlined,
+                      textColor: primaryColor,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 0, vertical: 4),
+                      borderRadius: BorderRadius.zero,
+                      label: " Edit Number",
+                      onTap: () {
+                        verificationId = "";
+                        phoneController.text;
+                        isLoading = false;
+                        setState(() {});
+                      },
+                    ),
+                  ),
             verificationId == ""
                 ? Padding(
                     padding: const EdgeInsets.only(top: 16),
@@ -781,6 +801,26 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                     autoFocus: true,
                     maxLength: 6,
                     keyboardType: TextInputType.number,
+                  ),
+            verificationId == ""
+                ? const SizedBox()
+                : SizedBox(
+                    width: defaultWidth,
+                    child: CDSButton(
+                      alignment: Alignment.centerRight,
+                      bgColor: themeData(context).colorScheme.background,
+                      leftIcon: Icons.refresh,
+                      textColor: primaryColor,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 0, vertical: 4),
+                      borderRadius: BorderRadius.zero,
+                      label: " Resend OTP",
+                      onTap: phoneController.text.length == 10
+                          ? () {
+                              checkuserNumber(phoneController.text);
+                            }
+                          : null,
+                    ),
                   ),
             // Container(
             //   padding: const EdgeInsets.fromLTRB(
@@ -865,7 +905,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                           ),
                     ),
                     Text(
-                      "Register yourself",
+                      "Let's start by creating your profile",
                       style: textTheme(context).bodySmall!.copyWith(
                             fontWeight: FontWeight.w500,
                           ),
@@ -918,7 +958,27 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                 // ),
                 // enabled: false,
               ),
-
+              verificationId == ""
+                  ? const SizedBox()
+                  : SizedBox(
+                      width: defaultWidth,
+                      child: CDSButton(
+                        alignment: Alignment.centerRight,
+                        bgColor: themeData(context).colorScheme.background,
+                        leftIcon: Icons.mode_edit_outline_outlined,
+                        textColor: primaryColor,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 0, vertical: 4),
+                        borderRadius: BorderRadius.zero,
+                        label: " Edit Number",
+                        onTap: () {
+                          verificationId = "";
+                          phoneController.text;
+                          isLoading = false;
+                          setState(() {});
+                        },
+                      ),
+                    ),
               verificationId == ""
                   ? Padding(
                       padding: const EdgeInsets.only(top: 16),
@@ -956,6 +1016,29 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                         setState(() {});
                       },
                     ),
+              verificationId == ""
+                  ? const SizedBox()
+                  : SizedBox(
+                      width: defaultWidth,
+                      child: CDSButton(
+                        alignment: Alignment.centerRight,
+                        bgColor: themeData(context).colorScheme.background,
+                        leftIcon: Icons.refresh,
+                        textColor: primaryColor,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 0, vertical: 4),
+                        borderRadius: BorderRadius.zero,
+                        label: " Resend OTP",
+                        onTap: newPhoneController.text.length == 10
+                            ? () {
+                                if (registerformKey.currentState!.validate()) {
+                                  checkExistingNumber(newPhoneController.text);
+                                }
+                              }
+                            : null,
+                      ),
+                    ),
+
               // Container(
               //   padding: const EdgeInsets.fromLTRB(
               //     0,
@@ -1075,17 +1158,17 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Tell us a bit about you",
+                      "Enter your profile details",
                       style: textTheme(context).headlineSmall!.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
                     ),
-                    Text(
-                      "That will help us better account setup for you",
-                      style: textTheme(context).bodySmall!.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ),
-                    ),
+                    // Text(
+                    //   "That will help us better account setup for you",
+                    //   style: textTheme(context).bodySmall!.copyWith(
+                    //         fontWeight: FontWeight.w500,
+                    //       ),
+                    // ),
                   ],
                 ),
               ),
@@ -1141,7 +1224,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                       },
                       obscureText: !showPasscode,
                       maxLines: 1,
-                      hintText: "Enter 6-Digit Number",
+                      hintText: "Enter a 6-Digit Passcode",
                       keyboardType: TextInputType.number,
                       inputFormatters: [
                         FilteringTextInputFormatter.digitsOnly,

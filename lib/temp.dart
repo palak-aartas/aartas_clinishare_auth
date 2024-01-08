@@ -5,7 +5,7 @@ String uatURL =
 String liveURL = "https://aartas.com/v1/public/api";
 
 // BASE URL
-String baseURL = uatURL;
+String baseURL = liveURL;
 
 String imgUrl = "$baseURL/../assets";
 
