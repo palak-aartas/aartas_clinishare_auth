@@ -185,8 +185,16 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
           isLoading = true;
           setState(() {});
           Provider.of<LicenceProvider>(context, listen: false)
-              .buyLicence(
-                  baseURL, "Free", "0", "4", "${value.data!.id}", "4", "5", "0")
+              .buySubscription(
+            baseURL,
+            "Free", // transaction ID
+            "0", // total_amount
+            "4", // Payment Method ID
+            "1", // Subscription ID
+            "${value.data!.id}", // user ID
+            "4", // Licence List
+            "5", // licence QTY
+          )
               .then((val) {
             isLoading = false;
             setState(() {});
