@@ -190,12 +190,13 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
               .buySubscription(
             baseURL,
             "Free", // transaction ID
-            "0", // total_amount
+            "0", // Total Amount
             "4", // Payment Method ID
             "1", // Subscription ID
             "${value.data!.id}", // user ID
             "4", // Licence List
             "5", // licence QTY
+            "0", // Amount
           )
               .then((val) {
             isLoading = false;
