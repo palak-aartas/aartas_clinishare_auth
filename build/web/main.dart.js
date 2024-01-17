@@ -44734,6 +44734,7 @@ s.toString
 A.zI(s,!1,t.v7).At($.G8,r.k4,r.k1.a.a,r.k2.a.a).bK(0,new A.aho(r),t.P)},
 aF(){var s=this
 s.a.toString
+s.e=2
 s.d=A.aye(s.e)
 s.aW()},
 m(){var s=this.db
@@ -44743,7 +44744,7 @@ O(a){return A.ayS(A.S(a).ay.CW,this.ah3(a))},
 ah3(a){var s,r=this,q=null,p=r.d,o=r.al4(a),n=r.akH(a),m=r.ah2(a),l=r.Ww(a)
 r.a.toString
 s=t.D
-l=A.a([o,n,m,l,A.fC(A.a([new A.oi(A.eg(B.a5,A.fC(A.a([B.CP,B.Li,A.e5("Account Setup Successfully",q,q,q,A.S(a).p4.f.i3(B.bo),q,q),B.Lh,A.e5("Your account has been successfully created. Please Login with the credentials in CliniSquare Desktop App.",q,q,q,A.S(a).p4.Q.i3(B.C),q,q)],s),B.bY,B.b6,B.aw),B.v,q,q,q,q,q,q,B.eY,q,q,400),q,q)],s),B.aM,B.b6,B.aw)],s)
+l=A.a([o,n,m,l,A.fC(A.a([new A.oi(A.eg(B.a5,A.fC(A.a([B.CP,B.Li,A.e5("Password Reset Successfully",q,q,q,A.S(a).p4.f.i3(B.bo),q,q),B.Lh,A.e5("Your account has been successfully created. Please Login with the credentials in CliniSquare Desktop App.",q,q,q,A.S(a).p4.Q.i3(B.C),q,q)],s),B.bY,B.b6,B.aw),B.v,q,q,q,q,q,q,B.eY,q,q,400),q,q)],s),B.aM,B.b6,B.aw)],s)
 if(p==null)p=$.aEp()
 l=A.fC(A.a([A.as_(new A.zk(p,B.HI,new A.agT(r),new A.adi(l,A.az([null,0],t.LO,t.S)),q))],s),B.aM,B.b6,B.aw)
 p=A.bp(a,q,t.w).w
@@ -44899,7 +44900,7 @@ if(s===!0){r.x=!0
 r.a5(new A.ahi())
 s=r.c
 s.toString
-A.zI(s,!1,t.Wl).xS($.G8,"Free","0","4",A.h(a.d.w),"4","5","0").bK(0,new A.ahj(r,a),t.P)}else{r=r.c
+A.zI(s,!1,t.Wl).xS($.G8,"Free","0","4","1",A.h(a.d.w),"4","5").bK(0,new A.ahj(r,a),t.P)}else{r=r.c
 r.toString
 s=a.b
 s.toString
@@ -45674,11 +45675,11 @@ A.oK.prototype={
 xS(a,b,c,d,e,f,g,h){return this.aej(a,b,c,d,e,f,g,h)},
 aej(a,b,c,d,e,f,g,h){var s=0,r=A.K(t.Wd),q,p,o,n,m,l
 var $async$xS=A.L(function(i,j){if(i===1)return A.H(j,r)
-while(true)switch(s){case 0:o=A.fp(a+"/buy/licence")
+while(true)switch(s){case 0:o=A.fp(a+"/buy/subscription")
 n=t.N
 m=A.az(["Authorization","Bearer "],n,n)
 s=3
-return A.Q(A.aqD(o,A.az(["transaction_id",b,"total_amount",c,"payment_methods_id",d,"user_id",e,"licence_list",f,"licence_qty",g,"amount",h],n,n),m),$async$xS)
+return A.Q(A.aqD(o,A.az(["transaction_id",b,"total_amount",c,"payment_methods_id",d,"subscription_id",e,"user_id",f,"licence_list",g,"licence_qty",h],n,n),m),$async$xS)
 case 3:l=j
 n=l.b
 A.k_("("+n+") "+o.k(0))

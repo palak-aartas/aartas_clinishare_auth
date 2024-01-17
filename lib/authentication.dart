@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print, unused_local_variable
+
 import 'dart:async';
 import 'dart:developer';
 import 'package:clinisquare_auth/custom_logo_image.dart';
@@ -279,6 +281,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
       if (value.code == 400) {
         verifyPhoneNumber(number);
         userid = "${value.data!.id}";
+        print(userid);
       } else {
         showSnackbar(context, value.message!, null);
       }

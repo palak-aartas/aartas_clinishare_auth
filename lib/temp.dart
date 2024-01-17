@@ -2,7 +2,7 @@ String uatURL =
     "https://aartas-qaapp-as.azurewebsites.net/connect2.0/public/api";
 
 // LIVE PRODUCTION URL
-String liveURL = "https://aartas.com/v1/public/api";
+String liveURL = "https://www.clinisquare.com/api";
 
 // BASE URL
 String baseURL = liveURL;
