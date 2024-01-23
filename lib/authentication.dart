@@ -488,7 +488,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                 Text(
                   widget.isForgetpassword != null && widget.isForgetpassword!
                       ? "Password Reset Successfully"
-                      : "Account Setup Successfully",
+                      : "Your CliniSquare account has been successfully created.",
                   style: textTheme(context).headlineSmall!.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
@@ -496,7 +496,7 @@ class _AuthenticationScreenState extends State<AuthenticationScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  "Your account has been successfully created. Please Login with the credentials in CliniSquare Desktop App.",
+                  "Please go back to the application to login into your workspace.",
                   style: textTheme(context).bodySmall!.copyWith(
                         fontWeight: FontWeight.w500,
                       ),

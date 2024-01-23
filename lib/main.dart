@@ -72,7 +72,7 @@ class MyHomePage extends StatelessWidget {
               const Expanded(
                 child: AuthenticationScreen(
                   // initialPage: initialPage != null ? initialPage! : 0,
-                  isForgetpassword: false,
+                  isForgetpassword: true,
                 ),
               ),
               AnimatedContainer(
